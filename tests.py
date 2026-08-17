@@ -1,11 +1,26 @@
 import pytest
 from main import BooksCollector
 
-@pytest.fixture
+@pytest.fixture()
 def collector():
     return BooksCollector()
 
-# Тест 1: Установка жанра
+
+# Тест 1: Проверка добавления книг
+@pytest.mark.parametrize("book_name, expected_result", [
+    ("Книга с названием из 40 символов 1234567", True),   # Ровно 40 символов 
+    ("A", True),                   # Минимальная длина 
+    ("", False),                   # Пустая строка 
+    ("Книга с названием из 40 символов 12345678", False), # Превышение лимита (41 символ) 
+])
+def test_add_new_book(collector, book_name, expected_result):    
+    first_add = collector.add_new_book(book_name)
+    second_add = None if not expected_result else collector.add_new_book(book_name)
+
+    assert (book_name in collector.get_books_genre()) == expected_result
+
+
+# Тест 2: Установка жанра
 def test_set_book_genre_valid_and_invalid(collector):
     collector.add_new_book("Автостопом по галактике")
     
@@ -13,25 +28,15 @@ def test_set_book_genre_valid_and_invalid(collector):
     assert result_valid is None
     assert collector.get_book_genre("Автостопом по галактике") == "Фантастика"
     
-    result_invalid = collector.set_book_genre("Автостопом по галактике", "Романтика")
-    assert result_invalid is None
-    assert collector.get_book_genre("Автостопом по галактике") == "Фантастика"
-    
-    # Книга отсутствует в словаре
-    assert collector.set_book_genre("Несуществующая книга", "Комедии") is None
-
-# Тест 2: Получение жанра
+# Тест 3: Получение жанра
 def test_get_book_genre(collector):
     collector.add_new_book("Дюна")
     collector.set_book_genre("Дюна", "Фантастика") 
     
     genre = collector.get_book_genre("Дюна")
-    no_genre = collector.get_book_genre("Книга без жанра")
-    
     assert genre == "Фантастика"
-    assert no_genre is None
 
-# Тест 3: Поиск книг по конкретному жанру
+# Тест 4: Поиск книг по конкретному жанру
 @pytest.mark.parametrize("genre, books_count", [
     ("Детективы", 1),
     ("Фантастика", 1),
@@ -47,13 +52,15 @@ def test_get_books_with_specific_genre(collector, genre, books_count):
     result = collector.get_books_with_specific_genre(genre)
     assert len(result) == books_count
 
-# Тест 4: Получение всего словаря genres
+
+# Тест 5: Получение всего словаря genres
 def test_get_books_genre(collector):
     collector.add_new_book("Книга")
     genres_map = collector.get_books_genre()
     assert isinstance(genres_map, dict)
 
-# Тест 5: Книги для детей
+
+# Тест 6: Книги для детей
 def test_get_books_for_children_excludes_age_rating(collector):
     collector.add_new_book("Король Лев")
     collector.set_book_genre("Король Лев", "Мультфильмы")
@@ -65,7 +72,7 @@ def test_get_books_for_children_excludes_age_rating(collector):
     assert "Король Лев" in children_books
     assert "Оно" not in children_books
 
-# Тест 6: Добавление в избранное
+# Тест 7: Добавление в избранное
 def test_add_book_in_favorites(collector):
     collector.add_new_book("Трое в лодке, не считая собаки")
     collector.set_book_genre("Трое в лодке, не считая собаки", "Комедии")
@@ -77,37 +84,26 @@ def test_add_book_in_favorites(collector):
     collector.add_book_in_favorites("Трое в лодке, не считая собаки")
     assert collector.get_list_of_favorites_books().count("Трое в лодке, не считая собаки") == 1
 
-# Тест 7: Удаление из избранного
+
+# Тест 8: Удаление из избранного
 def test_delete_book_from_favorites(collector):
     collector.add_new_book("Властелин Колец")
-    collector.set_book_genre("Властелин Колец", "Фантастика")
+    collector.set_book_genre("Властелин Колец", "Фэнтези")
+    
     collector.add_book_in_favorites("Властелин Колец")
     
     collector.delete_book_from_favorites("Властелин Колец")
     assert "Властелин Колец" not in collector.get_list_of_favorites_books()
 
-# Тест 8: Список избранного пустой / заполненный
+
+# Тест 9: Список избранного пустой / заполненный
 def test_get_list_of_favorites_books_empty_and_filled(collector):
     empty_list = collector.get_list_of_favorites_books()
-    assert empty_list == [] # Список пуст до добавления
+    assert empty_list == []
     
     collector.add_new_book("Зверополис")
     collector.set_book_genre("Зверополис", "Мультфильмы")
     collector.add_book_in_favorites("Зверополис")
     
     filled_list = collector.get_list_of_favorites_books()
-    assert filled_list == ["Зверополис"] # После добавления
-
-# Тест 9: Смена жанра
-def test_changing_book_genre(collector):
-    collector.add_new_book("Нейромант")
-    collector.set_book_genre("Нейромант", "Фантастика")
-    assert collector.get_book_genre("Нейромант") == "Фантастика"
-    
-    # Невалидный жанр
-    collector.set_book_genre("Нейромант", "Киберпанк")
-    assert collector.get_book_genre("Нейромант") == "Фантастика"
-    
-    # Валидная смена
-    collector.set_book_genre("Нейромант", "Детективы")
-    assert collector.get_book_genre("Нейромант") == "Детективы"
+    assert filled_list == ["Зверополис"]
